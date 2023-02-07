@@ -4,7 +4,7 @@ use rand::prelude::*;
 struct Point {
     x: usize,
     y: usize,
-    color: u8,
+    color: u32,
 }
 
 fn create_window(width: usize, height: usize) -> Window {
@@ -62,6 +62,33 @@ fn draw_points(
     }
 }
 
+fn determin_pixel_aligance(
+    points: &Vec<Point>,
+    buffer: &mut Vec<u32>,
+    radius: usize,
+    width: usize,
+    height: usize,
+) {
+    for pixel_index in 0..buffer.len() {
+
+        for point in points {
+            let point_index = point.y * width + point.x;
+
+            let mut diff = 0;
+
+            if pixel_index < point_index {
+                diff = point_index - pixel_index;
+            }
+            if pixel_index >= point_index {
+                diff = pixel_index - point_index;
+            }
+
+            // This is the slow approch, but I need to perform some experiments either way
+        
+        }
+    }
+}
+
 fn main() {
     const WIDTH: usize = 800;
     const HEIGHT: usize = 600;
@@ -70,7 +97,7 @@ fn main() {
 
     let mut window = create_window(WIDTH, HEIGHT);
 
-    let mut buffer: Vec<u32> = vec![255; WIDTH * HEIGHT];
+    let mut buffer: Vec<u32> = vec![u32::MAX; WIDTH * HEIGHT];
 
     const n: usize = 10; //number of voronoi points
     const radius: usize = 10;
@@ -79,8 +106,9 @@ fn main() {
 
     draw_points(&points, &mut buffer, radius, WIDTH, HEIGHT);
 
-    window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+    determin_pixel_aligance(&points, &mut buffer, radius, WIDTH, HEIGHT);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
     }
 }
