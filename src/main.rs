@@ -10,22 +10,15 @@ struct Point {
 
 #[derive(StructOpt, Debug)]
 struct Params {
-    #[structopt(
-        short = "n",
-        long,
-        help = "Number of seeds",
-        default_value="10"
-    )]
+    #[structopt(short = "n", long, help = "Number of seeds", default_value = "10")]
     n: usize,
 
-    #[structopt(short = "w", help = "Image width in pixels", default_value="800")]
+    #[structopt(short = "w", help = "Image width in pixels", default_value = "800")]
     width: usize,
 
-    #[structopt(short = "h", help = "Image height in pixels", default_value="600")]
+    #[structopt(short = "h", help = "Image height in pixels", default_value = "600")]
     height: usize,
-
 }
- 
 
 fn create_window(width: usize, height: usize) -> Window {
     let mut window = Window::new("Voronoi diagram", width, height, WindowOptions::default())
@@ -123,7 +116,10 @@ fn determin_pixel_aligance(
 fn main() {
     let params = Params::from_args();
 
-    let pallette: Vec<&str> = vec!["57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d", "f2a19d", "890b3b", "87ad2f", "afc6f2"];
+    let pallette: Vec<&str> = vec![
+        "57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d",
+        "f2a19d", "890b3b", "87ad2f", "afc6f2",
+    ];
     let mut colors: Vec<u32> = vec![];
 
     for hex in pallette {
@@ -139,14 +135,22 @@ fn main() {
 
     const radius: usize = 5;
 
-    let points = pick_random_points(params.n, params.width, params.height, &colors, radius, &mut rng);
-
+    let points = pick_random_points(
+        params.n,
+        params.width,
+        params.height,
+        &colors,
+        radius,
+        &mut rng,
+    );
 
     determin_pixel_aligance(&points, &mut buffer, radius, params.width, params.height);
 
     draw_points(&points, &mut buffer, radius, params.width, params.height);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        window.update_with_buffer(&buffer, params.width, params.height).unwrap();
+        window
+            .update_with_buffer(&buffer, params.width, params.height)
+            .unwrap();
     }
 }
