@@ -1,4 +1,4 @@
-use minifb::{Key, Window, WindowOptions};
+use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use rand::prelude::*;
 use structopt::StructOpt;
 
@@ -54,12 +54,7 @@ fn pick_random_points(
     points
 }
 
-fn draw_points(
-    points: &Vec<Point>,
-    buffer: &mut Vec<u32>,
-    radius: usize,
-    width: usize,
-) {
+fn draw_points(points: &Vec<Point>, buffer: &mut Vec<u32>, radius: usize, width: usize) {
     for point in points {
         // Rows
         let base_index = point.y * width + point.x;
@@ -111,12 +106,26 @@ fn determine_pixel_allegiance(
     }
 }
 
+fn recompute(
+    params: &Params,
+    buffer: &mut Vec<u32>,
+    colors: &Vec<u32>,
+    radius: usize,
+    rng: &mut ThreadRng,
+) {
+    let points = pick_random_points(params.n, params.width, params.height, &colors, radius, rng);
+
+    determine_pixel_allegiance(&points, buffer, params.width, params.height);
+
+    draw_points(&points, buffer, radius, params.width);
+}
+
 fn main() {
-    let params = Params::from_args();
+    let mut params = Params::from_args();
 
     let pallette: Vec<&str> = vec![
         "57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d",
-        "f2a19d", "890b3b", "87ad2f", "afc6f2", "cbd1c6", "001231", "0079b4", "b7b8a3", "e2affe"
+        "f2a19d", "890b3b", "87ad2f", "afc6f2", "cbd1c6", "001231", "0079b4", "b7b8a3", "e2affe",
     ];
     let mut colors: Vec<u32> = vec![];
 
@@ -133,20 +142,33 @@ fn main() {
 
     const RADIUS: usize = 5;
 
-    let points = pick_random_points(
-        params.n,
-        params.width,
-        params.height,
-        &colors,
-        RADIUS,
-        &mut rng,
-    );
-
-    determine_pixel_allegiance(&points, &mut buffer, params.width, params.height);
-
-    draw_points(&points, &mut buffer, RADIUS, params.width);
+    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        window
+            .get_keys_pressed(KeyRepeat::No)
+            .iter()
+            .for_each(|key| match key {
+                Key::R => {
+                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                }
+                Key::NumPadPlus => {
+                    if params.n < 100 {
+                        params.n += 1;
+                    }
+
+                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                }
+                Key::NumPadMinus => {
+                    if params.n > 1 {
+                        params.n -= 1;
+                    }
+
+                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                }
+                _ => (),
+            });
+
         window
             .update_with_buffer(&buffer, params.width, params.height)
             .unwrap();
