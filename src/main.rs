@@ -118,7 +118,7 @@ fn main() {
 
     let pallette: Vec<&str> = vec![
         "57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d",
-        "f2a19d", "890b3b", "87ad2f", "afc6f2",
+        "f2a19d", "890b3b", "87ad2f", "afc6f2", "cbd1c6", "001231", "0079b4", "b7b8a3", "e2affe"
     ];
     let mut colors: Vec<u32> = vec![];
 
