@@ -22,15 +22,16 @@ fn pick_random_points(
     n: usize,
     width: usize,
     height: usize,
+    colors: &Vec<u32>,
     radius: usize,
     rng: &mut ThreadRng,
 ) -> Vec<Point> {
     let mut points: Vec<Point> = Vec::with_capacity(n);
 
-    for _ in 0..n {
+    for i in 0..n {
         let x = rng.gen_range(radius..width - radius);
         let y = rng.gen_range(radius..height - radius);
-        let color = rng.gen_range(0..255);
+        let color = colors[i % colors.len()];
 
         let point = Point { x, y, color };
 
@@ -62,6 +63,12 @@ fn draw_points(
     }
 }
 
+fn euclidian_distance(x1: isize, y1: isize, x2: isize, y2: isize) -> isize {
+    let dx = x1 - x2;
+    let dy = y1 - y2;
+    dx * dx + dy * dy
+}
+
 fn determin_pixel_aligance(
     points: &Vec<Point>,
     buffer: &mut Vec<u32>,
@@ -69,29 +76,41 @@ fn determin_pixel_aligance(
     width: usize,
     height: usize,
 ) {
-    for pixel_index in 0..buffer.len() {
+    for x in 0..width {
+        for y in 0..height {
+            let mut closest_point_index = 0;
+            let mut closest_point_diff = isize::MAX;
 
-        for point in points {
-            let point_index = point.y * width + point.x;
+            let mut index = 0;
+            for point in points {
+                let x1 = point.x.try_into().unwrap();
+                let y1 = point.y.try_into().unwrap();
+                let x2 = x.try_into().unwrap();
+                let y2 = y.try_into().unwrap();
 
-            let mut diff = 0;
-
-            if pixel_index < point_index {
-                diff = point_index - pixel_index;
+                let distance = euclidian_distance(x1, y1, x2, y2);
+                if distance < closest_point_diff {
+                    closest_point_index = index;
+                    closest_point_diff = distance;
+                }
+                index += 1;
             }
-            if pixel_index >= point_index {
-                diff = pixel_index - point_index;
-            }
-
-            // This is the slow approch, but I need to perform some experiments either way
-        
+            buffer[y * width + x] = points[closest_point_index].color;
         }
     }
 }
 
 fn main() {
-    const WIDTH: usize = 800;
-    const HEIGHT: usize = 600;
+    const WIDTH: usize = 1024;
+    const HEIGHT: usize = 720;
+
+    let pallette: Vec<&str> = vec!["57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff"];
+    let mut colors: Vec<u32> = vec![];
+
+    for hex in pallette {
+        let color = u32::from_str_radix(&hex, 16).unwrap();
+        colors.push(color);
+    }
 
     let mut rng = rand::thread_rng();
 
@@ -102,11 +121,12 @@ fn main() {
     const n: usize = 10; //number of voronoi points
     const radius: usize = 10;
 
-    let points = pick_random_points(n, WIDTH, HEIGHT, radius, &mut rng);
+    let points = pick_random_points(n, WIDTH, HEIGHT, &colors, radius, &mut rng);
 
-    draw_points(&points, &mut buffer, radius, WIDTH, HEIGHT);
 
     determin_pixel_aligance(&points, &mut buffer, radius, WIDTH, HEIGHT);
+
+    draw_points(&points, &mut buffer, radius, WIDTH, HEIGHT);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
