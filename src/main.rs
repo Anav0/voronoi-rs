@@ -59,7 +59,6 @@ fn draw_points(
     buffer: &mut Vec<u32>,
     radius: usize,
     width: usize,
-    height: usize,
 ) {
     for point in points {
         // Rows
@@ -82,10 +81,9 @@ fn euclidian_distance(x1: isize, y1: isize, x2: isize, y2: isize) -> isize {
     dx * dx + dy * dy
 }
 
-fn determin_pixel_aligance(
+fn determine_pixel_allegiance(
     points: &Vec<Point>,
     buffer: &mut Vec<u32>,
-    radius: usize,
     width: usize,
     height: usize,
 ) {
@@ -133,20 +131,20 @@ fn main() {
 
     let mut buffer: Vec<u32> = vec![u32::MAX; params.width * params.height];
 
-    const radius: usize = 5;
+    const RADIUS: usize = 5;
 
     let points = pick_random_points(
         params.n,
         params.width,
         params.height,
         &colors,
-        radius,
+        RADIUS,
         &mut rng,
     );
 
-    determin_pixel_aligance(&points, &mut buffer, radius, params.width, params.height);
+    determine_pixel_allegiance(&points, &mut buffer, params.width, params.height);
 
-    draw_points(&points, &mut buffer, radius, params.width, params.height);
+    draw_points(&points, &mut buffer, RADIUS, params.width);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window
