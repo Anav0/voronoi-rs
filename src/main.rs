@@ -1,11 +1,31 @@
 use minifb::{Key, Window, WindowOptions};
 use rand::prelude::*;
+use structopt::StructOpt;
 
 struct Point {
     x: usize,
     y: usize,
     color: u32,
 }
+
+#[derive(StructOpt, Debug)]
+struct Params {
+    #[structopt(
+        short = "n",
+        long,
+        help = "Number of seeds",
+        default_value="10"
+    )]
+    n: usize,
+
+    #[structopt(short = "w", help = "Image width in pixels", default_value="800")]
+    width: usize,
+
+    #[structopt(short = "h", help = "Image height in pixels", default_value="600")]
+    height: usize,
+
+}
+ 
 
 fn create_window(width: usize, height: usize) -> Window {
     let mut window = Window::new("Voronoi diagram", width, height, WindowOptions::default())
@@ -101,8 +121,7 @@ fn determin_pixel_aligance(
 }
 
 fn main() {
-    const WIDTH: usize = 1024;
-    const HEIGHT: usize = 720;
+    let params = Params::from_args();
 
     let pallette: Vec<&str> = vec!["57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff"];
     let mut colors: Vec<u32> = vec![];
@@ -114,21 +133,20 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    let mut window = create_window(WIDTH, HEIGHT);
+    let mut window = create_window(params.width, params.height);
 
-    let mut buffer: Vec<u32> = vec![u32::MAX; WIDTH * HEIGHT];
+    let mut buffer: Vec<u32> = vec![u32::MAX; params.width * params.height];
 
-    const n: usize = 10; //number of voronoi points
     const radius: usize = 10;
 
-    let points = pick_random_points(n, WIDTH, HEIGHT, &colors, radius, &mut rng);
+    let points = pick_random_points(params.n, params.width, params.height, &colors, radius, &mut rng);
 
 
-    determin_pixel_aligance(&points, &mut buffer, radius, WIDTH, HEIGHT);
+    determin_pixel_aligance(&points, &mut buffer, radius, params.width, params.height);
 
-    draw_points(&points, &mut buffer, radius, WIDTH, HEIGHT);
+    draw_points(&points, &mut buffer, radius, params.width, params.height);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+        window.update_with_buffer(&buffer, params.width, params.height).unwrap();
     }
 }
