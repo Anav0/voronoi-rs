@@ -123,7 +123,7 @@ fn determin_pixel_aligance(
 fn main() {
     let params = Params::from_args();
 
-    let pallette: Vec<&str> = vec!["57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff"];
+    let pallette: Vec<&str> = vec!["57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d", "f2a19d", "890b3b", "87ad2f", "afc6f2"];
     let mut colors: Vec<u32> = vec![];
 
     for hex in pallette {
@@ -137,7 +137,7 @@ fn main() {
 
     let mut buffer: Vec<u32> = vec![u32::MAX; params.width * params.height];
 
-    const radius: usize = 10;
+    const radius: usize = 5;
 
     let points = pick_random_points(params.n, params.width, params.height, &colors, radius, &mut rng);
 
