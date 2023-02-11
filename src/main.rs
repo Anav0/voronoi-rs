@@ -1,6 +1,6 @@
 use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use rand::prelude::*;
-use structopt::StructOpt;
+use clap::Parser;
 
 struct Point {
     x: usize,
@@ -8,16 +8,20 @@ struct Point {
     color: u32,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
 struct Params {
-    #[structopt(short = "n", long, help = "Number of seeds", default_value = "10")]
+    #[arg(short, help = "Number of seeds", default_value = "10")]
     n: usize,
 
-    #[structopt(short = "w", help = "Image width in pixels", default_value = "800")]
+    #[arg(long, help = "Image width in pixels", default_value_t = 800)]
     width: usize,
 
-    #[structopt(short = "h", help = "Image height in pixels", default_value = "600")]
+    #[arg(long, help = "Image height in pixels", default_value_t = 600)]
     height: usize,
+
+    #[arg(short, help = "Which distance calculation function to use. 'e' - euclidian, 'm' - manhattan", default_value = "e")]
+    distance_type: String,
 }
 
 fn create_window(width: usize, height: usize) -> Window {
@@ -70,10 +74,16 @@ fn draw_points(points: &Vec<Point>, buffer: &mut Vec<u32>, radius: usize, width:
     }
 }
 
+type distance_fn = dyn Fn(isize, isize, isize, isize) -> isize;
+
 fn euclidian_distance(x1: isize, y1: isize, x2: isize, y2: isize) -> isize {
     let dx = x1 - x2;
     let dy = y1 - y2;
     dx * dx + dy * dy
+}
+
+fn manhattan_distance(x1: isize, y1: isize, x2: isize, y2: isize) -> isize {
+    (x1 - x2).abs() + (y1 - y2).abs()
 }
 
 fn determine_pixel_allegiance(
@@ -94,7 +104,7 @@ fn determine_pixel_allegiance(
                 let x2 = x.try_into().unwrap();
                 let y2 = y.try_into().unwrap();
 
-                let distance = euclidian_distance(x1, y1, x2, y2);
+                let distance = manhattan_distance(x1, y1, x2, y2);
                 if distance < closest_point_diff {
                     closest_point_index = index;
                     closest_point_diff = distance;
@@ -121,7 +131,7 @@ fn recompute(
 }
 
 fn main() {
-    let mut params = Params::from_args();
+    let mut params = Params::parse();
 
     let pallette: Vec<&str> = vec![
         "57ab5a", "eac55f", "f69d50", "f47068", "b083f0", "6cb6ff", "648c84", "24205c", "eda63d",
@@ -172,5 +182,6 @@ fn main() {
         window
             .update_with_buffer(&buffer, params.width, params.height)
             .unwrap();
+
     }
 }
