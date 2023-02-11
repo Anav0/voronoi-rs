@@ -1,6 +1,6 @@
+use clap::{Parser, ValueEnum};
 use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use rand::prelude::*;
-use clap::Parser;
 
 struct Point {
     x: usize,
@@ -9,7 +9,7 @@ struct Point {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about ="Program for displaying voronoi diagrams. Use '{' and '}' to change distance calculation function. '+' and '-' to change how many points are drawn", long_about = None)]
 struct Params {
     #[arg(short, help = "Number of seeds", default_value = "10")]
     n: usize,
@@ -20,8 +20,14 @@ struct Params {
     #[arg(long, help = "Image height in pixels", default_value_t = 600)]
     height: usize,
 
-    #[arg(short, help = "Which distance calculation function to use. 'e' - euclidian, 'm' - manhattan", default_value = "e")]
-    distance_type: String,
+    #[arg(short, help = "Which distance calculation function to use")]
+    distance: DistanceFn,
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+enum DistanceFn {
+    Euclidian,
+    Manhattan,
 }
 
 fn create_window(width: usize, height: usize) -> Window {
@@ -91,6 +97,7 @@ fn determine_pixel_allegiance(
     buffer: &mut Vec<u32>,
     width: usize,
     height: usize,
+    distance_type: &DistanceFn,
 ) {
     for x in 0..width {
         for y in 0..height {
@@ -104,7 +111,11 @@ fn determine_pixel_allegiance(
                 let x2 = x.try_into().unwrap();
                 let y2 = y.try_into().unwrap();
 
-                let distance = manhattan_distance(x1, y1, x2, y2);
+                let distance = match distance_type {
+                    DistanceFn::Euclidian => euclidian_distance(x1, y1, x2, y2),
+                    DistanceFn::Manhattan => manhattan_distance(x1, y1, x2, y2),
+                };
+
                 if distance < closest_point_diff {
                     closest_point_index = index;
                     closest_point_diff = distance;
@@ -121,13 +132,16 @@ fn recompute(
     buffer: &mut Vec<u32>,
     colors: &Vec<u32>,
     radius: usize,
+    distance: &DistanceFn,
     rng: &mut ThreadRng,
-) {
+) -> Vec<Point> {
     let points = pick_random_points(params.n, params.width, params.height, &colors, radius, rng);
 
-    determine_pixel_allegiance(&points, buffer, params.width, params.height);
+    determine_pixel_allegiance(&points, buffer, params.width, params.height, distance);
 
     draw_points(&points, buffer, radius, params.width);
+
+    points
 }
 
 fn main() {
@@ -150,9 +164,18 @@ fn main() {
 
     let mut buffer: Vec<u32> = vec![u32::MAX; params.width * params.height];
 
+    let mut points: Vec<Point> = Vec::with_capacity(params.n);
+
     const RADIUS: usize = 5;
 
-    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+    points = recompute(
+        &params,
+        &mut buffer,
+        &colors,
+        RADIUS,
+        &params.distance,
+        &mut rng,
+    );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         window
@@ -160,21 +183,62 @@ fn main() {
             .iter()
             .for_each(|key| match key {
                 Key::R => {
-                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                    points = recompute(
+                        &params,
+                        &mut buffer,
+                        &colors,
+                        RADIUS,
+                        &params.distance,
+                        &mut rng,
+                    );
+                }
+                Key::LeftBracket => {
+                    determine_pixel_allegiance(
+                        &points,
+                        &mut buffer,
+                        params.width,
+                        params.height,
+                        &DistanceFn::Euclidian,
+                    );
+                    draw_points(&points, &mut buffer, RADIUS, params.width);
+                }
+                Key::RightBracket => {
+                    determine_pixel_allegiance(
+                        &points,
+                        &mut buffer,
+                        params.width,
+                        params.height,
+                        &DistanceFn::Manhattan,
+                    );
+                    draw_points(&points, &mut buffer, RADIUS, params.width);
                 }
                 Key::NumPadPlus => {
                     if params.n < 100 {
                         params.n += 1;
                     }
 
-                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                    points = recompute(
+                        &params,
+                        &mut buffer,
+                        &colors,
+                        RADIUS,
+                        &params.distance,
+                        &mut rng,
+                    );
                 }
                 Key::NumPadMinus => {
                     if params.n > 1 {
                         params.n -= 1;
                     }
 
-                    recompute(&params, &mut buffer, &colors, RADIUS, &mut rng);
+                    points = recompute(
+                        &params,
+                        &mut buffer,
+                        &colors,
+                        RADIUS,
+                        &params.distance,
+                        &mut rng,
+                    );
                 }
                 _ => (),
             });
@@ -182,6 +246,5 @@ fn main() {
         window
             .update_with_buffer(&buffer, params.width, params.height)
             .unwrap();
-
     }
 }
