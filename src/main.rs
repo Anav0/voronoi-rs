@@ -1,6 +1,7 @@
 use clap::{Parser, ValueEnum};
 use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use rand::prelude::*;
+use std::time::SystemTime;
 
 struct Point {
     x: usize,
@@ -144,6 +145,24 @@ fn recompute(
     points
 }
 
+fn lerp(start: f64, end: f64, dt: f64) -> f64 {
+    start * (1.0 - dt) + end * dt
+}
+
+fn draw_gradient(dt: f64, buffer: &mut Vec<u32>, width: usize, height: usize, step_size: usize) {
+    let mut color: u32 = 0;
+
+    for y in 0..height {
+        if y % step_size == 0 {
+            color += 1;
+        }
+        for x in 0..width {
+            let index = y * width + x;
+            buffer[index] = color;
+        }
+    }
+}
+
 fn main() {
     let mut params = Params::parse();
 
@@ -168,6 +187,9 @@ fn main() {
 
     const RADIUS: usize = 5;
 
+    let mut dt: f64 = 0.0;
+    let mut last = SystemTime::now();
+
     points = recompute(
         &params,
         &mut buffer,
@@ -177,11 +199,27 @@ fn main() {
         &mut rng,
     );
 
+    let mut step_size = 10;
+
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let now = SystemTime::now();
+        dt = now.duration_since(last).unwrap().as_secs_f64() / 1000.0;
+        last = now;
+
+        //draw_gradient(dt, &mut buffer, params.width, params.height, step_size);
+
         window
             .get_keys_pressed(KeyRepeat::No)
             .iter()
             .for_each(|key| match key {
+                Key::L => {
+                    step_size += 1;
+                },
+                Key::J => {
+                    if step_size > 1 {
+                        step_size -= 1;
+                    }
+                }
                 Key::R => {
                     points = recompute(
                         &params,
